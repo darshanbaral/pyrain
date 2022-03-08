@@ -54,12 +54,10 @@ class Rain:
 class SyntheticRain:
     def __init__(self,
                  data: pandas.DataFrame,
-                 totals: pandas.Series,
                  time_step: pandas.Timedelta,
                  dist_name: str,
                  dist_params: tuple[float]):
         self.data = data
-        self.totals = totals
         self.time_step = time_step
         self.dist_name = dist_name
         self.dist_params = dist_params
@@ -69,7 +67,7 @@ class RainLibrary:
     def __init__(self,
                  rain: Rain,
                  year_start: int = 9,
-                 block_size: int = 3,
+                 block_size: Union[str, pandas.Timedelta] = "3D",
                  dry_year_break: float = 0.25,
                  wet_year_break: float = 0.75):
         """
@@ -77,7 +75,7 @@ class RainLibrary:
 
         :param rain: rain data of class Rain
         :param year_start: the month when the water year starts
-        :param block_size: number of days that counts as one block when sampling randomly for generation of
+        :param block_size: Timedelta that counts as one block when sampling randomly for generation of
         synthetic rainfall data
         :param dry_year_break: water year with totals less than the value corresponding to this percentile will be
         regarded as dry year
@@ -92,15 +90,15 @@ class RainLibrary:
         self.distribution_params = {}
         self.time_step = rain.time_step
         self.year_start = year_start
-        self.block_size = block_size
+        self.block_size = pandas.to_timedelta(block_size)
         self.group_column = "water_year"
-        self.table, self.blocks, self.index = self.__create_library(rain.rain_data)
+        self.table, self.blocks, self.index = self._create_library(rain.rain_data)
         self.totals = self.table.sum()
         year_breaks = self.totals.quantile([dry_year_break, wet_year_break]).round(2)
         self.dry_year_break, self.wet_year_break = year_breaks.tolist()
-        self.year_groups = self.__years_to_groups()
+        self.year_groups = self._years_to_groups()
 
-    def __create_library(self, rain: pandas.DataFrame):
+    def _create_library(self, rain: pandas.DataFrame):
         rain[self.group_column] = rain.index.map(
             lambda x: x.year if (x.month < self.year_start) | (self.year_start == 1) else x.year + 1)
 
@@ -117,19 +115,17 @@ class RainLibrary:
         new_index = pandas.date_range(datetime(2018, self.year_start, 1),
                                       datetime(2019, self.year_start, 1) - self.time_step,
                                       freq=self.time_step)
-        # rain = rain.reindex(new_index)
-
-        block_num = new_index.to_series().sub(new_index[0]).astype("timedelta64[D]").div(self.block_size).astype(int)
+        block_num = new_index.to_series().groupby(pandas.Grouper(freq="3D")).ngroup()
         rain.index = block_num
         return rain, set(block_num), new_index
 
-    def __years_to_groups(self):
+    def _years_to_groups(self):
         return {"dry_years": (self.totals[self.totals <= self.dry_year_break]).index.to_series(),
                 "wet_years": (self.totals[self.totals >= self.wet_year_break]).index.to_series(),
                 "normal_years": (self.totals[
                     (self.wet_year_break > self.totals) & (self.totals > self.dry_year_break)]).index.to_series()}
 
-    def __fit_distribution(self, dist_names: Union[str, list[str]]):
+    def _fit_distribution(self, dist_names: Union[str, list[str]]):
         """
         fit distributions to water year totals
 
@@ -152,11 +148,10 @@ class RainLibrary:
         :return: randomly generated values from fitted distribution
         """
 
-        n_cores = int(n_cores)
-        assert n_cores >= 1, "'n_cores' has to be integer greater than or equal to 1"
+        n_cores = int(max(1, n_cores))
 
         if (self.distribution_params is None) or (dist not in self.distribution_params):
-            self.__fit_distribution(dist)
+            self._fit_distribution(dist)
 
         params = self.distribution_params[dist]
 
@@ -167,28 +162,28 @@ class RainLibrary:
             container = []
 
             for synthetic_total in synthetic_totals:
-                synthetic_rain_series = pool.apply_async(self.sample_rain, (synthetic_total,))
+                synthetic_rain_series = pool.apply_async(self._sample_rain, (synthetic_total,))
                 container.append(synthetic_rain_series)
             synthetic_rain = [res.get() for res in container]
         else:
-            synthetic_rain = [self.sample_rain(val) for val in synthetic_totals]
+            synthetic_rain = [self._sample_rain(val) for val in synthetic_totals]
+
         synthetic_rain = pandas.concat(synthetic_rain, axis=1)
         synthetic_rain.index = self.index
 
         return SyntheticRain(synthetic_rain,
-                             pandas.Series(synthetic_totals),
                              self.time_step,
                              dist,
                              params)
 
-    def sample_rain(self, synthetic_total: float) -> pandas.Series:
+    def _sample_rain(self, synthetic_total: float) -> pandas.Series:
         """
         generate synthetic rainfall data
 
         :param synthetic_total: the total to assign to randomly concatenated rainfall time-series
         :return:
         """
-        group = self.__find_group(synthetic_total)
+        group = self._find_group(synthetic_total)
 
         curr_year_rain = {}
         for block in self.blocks:
@@ -199,7 +194,7 @@ class RainLibrary:
 
         return curr_year_rain
 
-    def __find_group(self, total):
+    def _find_group(self, total):
         if total <= self.dry_year_break:
             return "dry_years"
         elif total >= self.wet_year_break:
