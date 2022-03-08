@@ -55,10 +55,12 @@ class SyntheticRain:
     def __init__(self,
                  data: pandas.DataFrame,
                  time_step: pandas.Timedelta,
+                 block_size: pandas.Timedelta,
                  dist_name: str,
                  dist_params: tuple[float]):
         self.data = data
         self.time_step = time_step
+        self.block_size = block_size
         self.dist_name = dist_name
         self.dist_params = dist_params
 
@@ -115,7 +117,7 @@ class RainLibrary:
         new_index = pandas.date_range(datetime(2018, self.year_start, 1),
                                       datetime(2019, self.year_start, 1) - self.time_step,
                                       freq=self.time_step)
-        block_num = new_index.to_series().groupby(pandas.Grouper(freq="3D")).ngroup()
+        block_num = new_index.to_series().groupby(pandas.Grouper(freq=self.block_size)).ngroup()
         rain.index = block_num
         return rain, set(block_num), new_index
 
@@ -171,10 +173,11 @@ class RainLibrary:
         synthetic_rain = pandas.concat(synthetic_rain, axis=1)
         synthetic_rain.index = self.index
 
-        return SyntheticRain(synthetic_rain,
-                             self.time_step,
-                             dist,
-                             params)
+        return SyntheticRain(data=synthetic_rain,
+                             time_step=self.time_step,
+                             block_size=self.block_size,
+                             dist_name=dist,
+                             dist_params=params)
 
     def _sample_rain(self, synthetic_total: float) -> pandas.Series:
         """
