@@ -1,6 +1,6 @@
 # pyrain
 
-A python package for stochastically simulating rainfall time series data from observed data.
+A python package for rainfall simulation - stochastically generating synthetic rainfall time series data from observed data.
 
 ## Method
 
