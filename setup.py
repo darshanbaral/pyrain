@@ -4,8 +4,8 @@ setup(
     name='pyrain',
     version='0.0.2',
     packages=['pyrain'],
-    url='',
-    license='',
+    url='https://github.com/darshanbaral/pyrain',
+    license='MIT',
     author='Darshan Baral',
     author_email='darshanbaral@gmail.com',
     description='package for stochastic rainfall generation'
