@@ -14,12 +14,13 @@ class Rain:
                  rain_col: str,
                  date_format: str = None):
         """
-        Read rain data and prepare for library creation.
+        Read and prepare rain data for library creation.
 
-        :param path: path to the csv file containing rain data
-        :param datetime_col: name of the datetime column in the csv
-        :param rain_col: name of the rain column in the csv
-        :param date_format: format to use for parsing datetime column
+        Args:
+            path: path to the csv file containing rain data
+            datetime_col: name of the datetime column in the csv
+            rain_col: name of the rain column in the csv
+            date_format: format to use for parsing datetime column
         """
         self.rain_data = self.__read_rain(path, datetime_col, rain_col, date_format)
 
@@ -58,6 +59,17 @@ class SyntheticRain:
                  block_size: pandas.Timedelta,
                  dist_name: str,
                  dist_params: tuple[float]):
+        """
+        Class that holds synthetic rainfall data.
+
+        Args:
+            data: the synthetic rainfall time-series data - `pandas.DataFrame`
+            time_step: the time-step of the synthetic rainfall time-series data (same as the time-step of the
+                observed data) - `pandas.Timedelta`
+            block_size: block size duration used for collating synthetic data - `pandas.Timedelta`
+            dist_name: name of distribution used for generating synthetic water-year totals
+            dist_params: parameters from fitting `dist_name` distribution to observed water-year totals
+        """
         self.data = data
         self.time_step = time_step
         self.block_size = block_size
@@ -75,14 +87,15 @@ class RainLibrary:
         """
         Library created from observed rainfall data.
 
-        :param rain: rain data of class Rain
-        :param year_start: the month when the water year starts
-        :param block_size: Timedelta that counts as one block when sampling randomly for generation of
-        synthetic rainfall data
-        :param dry_year_break: water year with totals less than the value corresponding to this percentile will be
-        regarded as dry year
-        :param wet_year_break: water year with totals more than the value corresponding to this percentile will be
-        regarded as wet year
+        Args:
+            rain: rain data of class `Rain`
+            year_start: the month when the water year starts
+            block_size: `pandas Timedelta` that counts as one block when sampling randomly for generation of
+                synthetic rainfall data
+            dry_year_break: water year with totals less than the value corresponding to this percentile will be
+                regarded as dry year
+            wet_year_break: water year with totals more than the value corresponding to this percentile will be
+                regarded as wet year
         """
 
         assert 1 > dry_year_break > 0, "'dry_year_break' should be between 0 and 1"
@@ -138,16 +151,19 @@ class RainLibrary:
             dist_names = [dist_names]
 
         for dist_name in dist_names:
-            self.distribution_params[dist_name] = stats.fit_dist(self.totals, dist_name)
+            self.distribution_params[dist_name] = stats._fit_dist(self.totals, dist_name)
 
     def generate(self, size: int, dist: str = "gamma", n_cores: int = 1) -> SyntheticRain:
         """
-        generate random values from distribution fitted to water year totals
+        generate synthetic rainfall time-series data
 
-        :param size: size of randomly generated data
-        :param dist: name of distribution to use
-        :param n_cores: number of cores to use in parallel, if available
-        :return: randomly generated values from fitted distribution
+        Args:
+            size: the size (number of water-years) of randomly generated data
+            dist: name of distribution to use. must be one of `gamma`, `gev`, or `lognorm`
+            n_cores: number of cores to use in parallel, if available
+
+        Returns:
+            Synthetic rainfall time-series data for `size` number of water-years
         """
 
         n_cores = int(max(1, n_cores))
@@ -157,7 +173,7 @@ class RainLibrary:
 
         params = self.distribution_params[dist]
 
-        synthetic_totals = stats.get_random_value(params, dist=dist, size=size).round(2)
+        synthetic_totals = stats._get_random_value(params, dist=dist, size=size).round(2)
 
         if n_cores > 1:
             pool = Pool(n_cores)
