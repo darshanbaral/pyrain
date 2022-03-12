@@ -4,3 +4,5 @@ __pycache__
 temp.py
 *.egg-info
 dist
+html
+housekeeping.ps1
