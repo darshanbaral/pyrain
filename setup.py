@@ -9,4 +9,5 @@ setup(
     author='Darshan Baral',
     author_email='darshanbaral@gmail.com',
     description='package for stochastic rainfall generation'
+    install_requires=["pandas", "numpy", "scipy"]
 )
