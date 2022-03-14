@@ -4,6 +4,7 @@ from pandas.api import types
 from multiprocessing import Pool
 from datetime import datetime
 from typing import Union
+from pathlib import Path
 from . import stats
 
 
@@ -76,6 +77,30 @@ class SyntheticRain:
         self.dist_name = dist_name
         self.dist_params = dist_params
 
+    def save(self,
+             root: Union[str, Path],
+             prefix: str = "",
+             save_info: bool = True,
+             n_digits: int = 2):
+        """
+        Save synthetic rainfall data locally
+
+        Args:
+            root: the directory where the synthetic rain data should be saved
+            prefix: the prefix that will be added to the file names
+            save_info: if `False`, only the rain data will be saved
+            n_digits: the rainfall values will be rounded to this many decimal places
+        """
+        root = Path(root)
+        self.data.to_csv(root / "{prefix}_synthetic_rain.csv".format(prefix=prefix))
+        if save_info:
+            with open(root / "{prefix}_synthetic_rain_info.txt".format(prefix=prefix), "w") as f:
+                f.write("time step: {ts}\n".format(ts=self.time_step))
+                f.write("block size: {bs}\n".format(bs=self.block_size))
+                f.write("distribution name: {dn}\n".format(dn=self.dist_name))
+                f.write("distribution parameters: {dp}\n".format(dp=self.dist_params))
+            f.close()
+
 
 class RainLibrary:
     def __init__(self,
@@ -144,8 +169,11 @@ class RainLibrary:
         """
         fit distributions to water year totals
 
-        :param dist_names: name or names of distributions
-        :return: distribution parameters fitted to water year totals
+        Args:
+            dist_names: name or names of distributions
+
+        Returns:
+            distribution parameters fitted to water year totals
         """
         if isinstance(dist_names, str):
             dist_names = [dist_names]
