@@ -39,9 +39,8 @@ Synthetic rainfall data is generated from observed rainfall time-series data.
 ```python
 import pyrain
 
-# process raw data by using <a href="https://darshanbaral.github.io/py_docs/pyrain/core.html#pyrain.core.Rain">Rain</a> class
 rain = pyrain.Rain("./data/hourly.csv", "datetime", "P")
-lib = pyrain.RainLibrary(rain)
+lib = rain.create_library()
 synthetic_rain = lib.generate(100, n_cores=4)
 ```
 
