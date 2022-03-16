@@ -50,8 +50,5 @@ synthetic_rain = lib.generate(100, n_cores=4)
 - [GitHub](https://github.com/darshanbaral/pyrain)
 """
 
-__pdoc__ = {
-    "stats": False,
-}
-
-from .core import Rain, RainLibrary
+from .observed_rain import ObservedRain
+from .rain_library import RainLibrary
