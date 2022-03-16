@@ -6,3 +6,6 @@ temp.py
 dist
 html
 housekeeping.ps1
+notebooks
+*.ipynb_checkpoints
+debug_*
