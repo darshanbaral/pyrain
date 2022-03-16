@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pyrain',
-    version='0.0.2',
+    version='0.0.3',
     packages=['pyrain'],
     url='https://github.com/darshanbaral/pyrain',
     license='MIT',
