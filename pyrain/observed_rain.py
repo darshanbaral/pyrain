@@ -21,11 +21,11 @@ class ObservedRain:
             rain_col: name of the rain column in the csv
             date_format: format to use for parsing datetime column
         """
-        self.data = self.__read_rain(path, datetime_col, rain_col, date_format)
-        "processed rainfall data in long format"
-
         self.time_step = None
         "time step calculated from raw data"
+
+        self.data = self.__read_rain(path, datetime_col, rain_col, date_format)
+        "processed rainfall data in long format"
 
     def __read_rain(self, path, datetime_col, rain_col, date_format):
         rain_data = pandas.read_csv(path, usecols=[datetime_col, rain_col])
