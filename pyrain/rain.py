@@ -1,7 +1,7 @@
 import pandas
 from scipy import interpolate
 from typing import Union
-from datetime import datetime
+from ._utils import _to_timestamp
 
 
 class Rain:
@@ -48,7 +48,7 @@ class Rain:
             windows = [windows]
 
         for window in windows:
-            assert self._to_timestamp(window) >= self._to_timestamp(
+            assert _to_timestamp(window) >= _to_timestamp(
                 self.time_step), "windows need to be larger than or equal to time step"
 
         for window in windows:
@@ -83,14 +83,14 @@ class Rain:
             `Dataframe`: counts of `period` duration with rainfall by `group_by` duration
         """
 
-        assert self._to_timestamp(period) >= self._to_timestamp(self.time_step), "period must be larger than time step"
+        assert _to_timestamp(period) >= _to_timestamp(self.time_step), "period must be larger than time step"
 
         wp = self.data.groupby(pandas.Grouper(freq=period)).sum().gt(0)
 
         if group_by is None:
             return wp.sum()
 
-        assert self._to_timestamp(group_by) > self._to_timestamp(period), "group_by cannot be smaller than duration"
+        assert _to_timestamp(group_by) > _to_timestamp(period), "group_by cannot be smaller than duration"
         return wp.groupby(pandas.Grouper(freq=group_by)).sum()
 
     def get_summary(self,
@@ -109,16 +109,5 @@ class Rain:
         if group_by is None:
             return self.data.agg(funcs)
 
-        assert self._to_timestamp(group_by) >= self._to_timestamp(
-            self.time_step), "group_by must be larger than time step"
+        assert _to_timestamp(group_by) >= _to_timestamp(self.time_step), "group_by must be larger than time step"
         return self.data.groupby(pandas.Grouper(freq=group_by)).agg(funcs)
-
-    @staticmethod
-    def _to_timestamp(freq: Union[str, pandas.Timedelta],
-                      origin: datetime = datetime(2017, 1, 1)):
-        if isinstance(freq, str):
-            return origin + pandas.tseries.frequencies.to_offset(freq)
-        elif isinstance(freq, pandas.Timedelta):
-            return origin + freq
-        else:
-            raise ValueError("input should either be valid offset alias or Timedelta")

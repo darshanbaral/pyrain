@@ -11,7 +11,9 @@ class SyntheticRain(Rain):
                  time_step: pandas.Timedelta,
                  block_size: pandas.Timedelta,
                  dist_name: str,
-                 dist_params: tuple[float]):
+                 dist_params: tuple[float],
+                 low: pandas.Timedelta,
+                 high: pandas.Timedelta):
 
         Rain.__init__(self, data, time_step)
         self.block_size = block_size
@@ -22,6 +24,12 @@ class SyntheticRain(Rain):
 
         self.dist_params = dist_params
         """parameters from fitting `dist_name` distribution to observed water-year totals"""
+
+        self.low = low
+        """Duration of smallest block used for randomly collating synthetic data"""
+
+        self.high = high
+        """Duration of largest block used for randomly collating synthetic data"""
 
     def save(self,
              root: Union[str, Path],
@@ -40,9 +48,11 @@ class SyntheticRain(Rain):
         root = Path(root)
         self.data.round(n_digits).to_csv(root / "{prefix}_synthetic_rain.csv".format(prefix=prefix))
         if save_info:
-            with open(root / "{prefix}_synthetic_rain_info.txt".format(prefix=prefix), "w") as f:
-                f.write("time step: {ts}\n".format(ts=self.time_step))
-                f.write("block size: {bs}\n".format(bs=self.block_size))
-                f.write("distribution name: {dn}\n".format(dn=self.dist_name))
-                f.write("distribution parameters: {dp}\n".format(dp=self.dist_params))
+            with open(root / "{prefix}_synthetic_rain_info.toml".format(prefix=prefix), "w") as f:
+                f.write("'time_step' = '{ts}'\n".format(ts=self.time_step))
+                f.write("'block_size' = '{bs}'\n".format(bs=self.block_size))
+                f.write("'dist_name' = '{dn}'\n".format(dn=self.dist_name))
+                f.write("'dist_params' = {dp}\n".format(dp=list(self.dist_params)))
+                f.write("'low' = '{low}'\n".format(low=self.low))
+                f.write("'high' = '{high}'\n".format(high=self.high))
             f.close()
