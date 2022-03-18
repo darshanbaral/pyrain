@@ -22,9 +22,9 @@ Synthetic rainfall data is generated from observed rainfall time-series data.
     - Determine whether the *synthetic total* would be classified as `dry year`, `wet year`, or `normal year` based on
         the threshold determined from the observed data (Step `4`).
     - Pick blocks of short durations one at a time from different water-years randomly in the bucket determined
-        above to collate a synthetic time series. By default, blocks of 3-days are used. For example, if
-        the synthetic total is determined to belong to dry year bucket, first 3-days would come from a random
-        observed water-year in dry bucket. Then the next 3-days would again come from a random water-year chosen
+        above to collate a synthetic time series. By default, blocks of durations between 6 hours and 7 days are used. For example, if
+        the synthetic total is determined to belong to dry year bucket, first randomly chosen n-days (6H < n < 7D)would come from a random
+        observed water-year in dry bucket. Then the next randomly chosen m-days (6H < m < 7D) would again come from a random water-year chosen
         from the dry bucket. Blocks would keep stacking one at a time from random water-years of dry bucket until
         we had a time series for the whole synthetic water-year.
     - Normalize the time-series from above by its total and multiply by the *synthetic total*.
@@ -50,4 +50,4 @@ synthetic_rain = lib.generate(100, n_cores=4)
 """
 
 from .observed_rain import ObservedRain
-from .rain_library import RainLibrary
+from .rain_library import RainLibrary, load_synthetic_rain
