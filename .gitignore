@@ -9,3 +9,4 @@ housekeeping.ps1
 notebooks
 *.ipynb_checkpoints
 debug_*
+output
