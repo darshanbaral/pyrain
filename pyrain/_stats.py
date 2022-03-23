@@ -1,5 +1,5 @@
 import pandas
-from scipy.stats import gamma, genextreme, lognorm
+from scipy.stats import gamma, genextreme, lognorm, kappa4, pareto
 from enum import Enum
 
 
@@ -7,6 +7,8 @@ class Dists(Enum):
     gamma = gamma
     gev = genextreme
     lognorm = lognorm
+    kappa = kappa4
+    pareto = pareto
 
 
 def _get_dist_func(dist):
