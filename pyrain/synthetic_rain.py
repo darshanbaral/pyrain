@@ -9,15 +9,12 @@ class SyntheticRain(Rain):
     def __init__(self,
                  data: pandas.DataFrame,
                  time_step: pandas.Timedelta,
-                 block_size: pandas.Timedelta,
                  dist_name: str,
                  dist_params: tuple[float],
                  low: pandas.Timedelta,
                  high: pandas.Timedelta):
 
         Rain.__init__(self, data, time_step)
-        self.block_size = block_size
-        """block size duration used for collating synthetic data - `Timedelta`"""
 
         self.dist_name = dist_name
         """name of distribution used for generating synthetic water-year totals"""
@@ -50,7 +47,6 @@ class SyntheticRain(Rain):
         if save_info:
             with open(root / "{prefix}_synthetic_rain_info.toml".format(prefix=prefix), "w") as f:
                 f.write("'time_step' = '{ts}'\n".format(ts=self.time_step))
-                f.write("'block_size' = '{bs}'\n".format(bs=self.block_size))
                 f.write("'dist_name' = '{dn}'\n".format(dn=self.dist_name))
                 f.write("'dist_params' = {dp}\n".format(dp=list(self.dist_params)))
                 f.write("'low' = '{low}'\n".format(low=self.low))

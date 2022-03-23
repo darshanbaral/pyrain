@@ -1,4 +1,5 @@
 import pandas
+import pdrle
 from scipy import interpolate
 from typing import Union
 from ._utils import _to_timestamp
@@ -9,6 +10,7 @@ class Rain:
     class that holds rainfall data in wide format and provides useful attributes and methods for viewing results. this
     class is inherited by [`RainLibrary`](./rain_library.html) and [`SyntheticRain`](./synthetic_rain.html).
     """
+
     def __init__(self,
                  data: pandas.DataFrame,
                  time_step: pandas.Timedelta):
@@ -111,3 +113,7 @@ class Rain:
 
         assert _to_timestamp(group_by) >= _to_timestamp(self.time_step), "group_by must be larger than time step"
         return self.data.groupby(pandas.Grouper(freq=group_by)).agg(funcs)
+
+    def get_storm_durations(self,
+                            group_by: str = None):
+        pass

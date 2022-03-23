@@ -102,4 +102,4 @@ class ObservedRain:
                                       datetime(2019, year_start, 1) - self.time_step,
                                       freq=self.time_step)
         rain.index = new_index
-        return RainLibrary(rain, self.time_step, year_start, block_size, dry_year_break, wet_year_break)
+        return RainLibrary(rain, self.time_step, year_start, dry_year_break, wet_year_break)

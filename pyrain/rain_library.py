@@ -28,17 +28,16 @@ def load_synthetic_rain(data_path: Union[str, Path],
     data.index = pandas.to_datetime(data.index)
 
     if info_path is None:
-        time_step, block_size, dist_name, dist_params, low, high = [None] * 6
+        time_step, dist_name, dist_params, low, high = [None] * 5
     else:
         info = toml.load(info_path)
         time_step = pandas.Timedelta(info["time_step"])
-        block_size = pandas.Timedelta(info["block_size"])
         dist_name = info["dist_name"]
         low = pandas.Timedelta(info["low"])
         high = pandas.Timedelta(info["high"])
         dist_params = tuple(info["dist_params"])
 
-    return SyntheticRain(data, time_step, block_size, dist_name, dist_params, low, high)
+    return SyntheticRain(data, time_step, dist_name, dist_params, low, high)
 
 
 class RainLibrary(Rain):
@@ -48,15 +47,12 @@ class RainLibrary(Rain):
                  rain: pandas.DataFrame,
                  time_step: pandas.Timedelta,
                  year_start: int,
-                 block_size: pandas.Timedelta,
                  dry_year_break: float,
                  wet_year_break: float):
         """
         Args:
             rain: rain data of class `Rain`
             year_start: the month when the water year starts
-            block_size: `pandas Timedelta` that counts as one block when sampling randomly for generation of
-                synthetic rainfall data
             dry_year_break: water year with totals less than the value corresponding to this percentile will be
                 regarded as dry year
             wet_year_break: water year with totals more than the value corresponding to this percentile will be
@@ -71,16 +67,6 @@ class RainLibrary(Rain):
 
         self.year_start = year_start
         """the month when the water year begins"""
-
-        self.block_size = pandas.to_timedelta(block_size)
-        """the duration of short blocks used for randomly collating synthetic rainfall"""
-
-        self._blocks = self.data.groupby(pandas.Grouper(freq=block_size)).ngroup()
-        self.blocks = self._blocks.unique()
-        """
-        The unique block numbers for consecutive duration of short blocks used for randomly collating synthetic
-        rainfall
-        """
 
         year_breaks = self.totals.quantile([dry_year_break, wet_year_break]).round(2).tolist()
         self.dry_year_break = year_breaks[0]
@@ -166,7 +152,6 @@ class RainLibrary(Rain):
 
         return SyntheticRain(data=synthetic_rain,
                              time_step=self.time_step,
-                             block_size=self.block_size,
                              dist_name=dist,
                              dist_params=params,
                              low=low,
