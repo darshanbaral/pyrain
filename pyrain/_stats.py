@@ -1,14 +1,30 @@
 import pandas
-from scipy.stats import gamma, genextreme, lognorm, kappa4, pareto
+import numpy
+from scipy.stats import gamma, genextreme, lognorm, kappa3, pareto, weibull_min, pearson3
 from enum import Enum
+
+
+class _LogPearson3:
+    @staticmethod
+    def fit(data):
+        data = numpy.log10(data)
+        return pearson3.fit(data)
+
+    @staticmethod
+    def rvs(skew, loc=0, scale=1, size=1):
+        data = pearson3.rvs(skew=skew, loc=loc, scale=scale, size=size)
+        return numpy.power(10, data)
 
 
 class Dists(Enum):
     gamma = gamma
     gev = genextreme
     lognorm = lognorm
-    kappa = kappa4
+    kappa3 = kappa3
     pareto = pareto
+    weibull = weibull_min
+    pearson3 = pearson3
+    logpearson3 = _LogPearson3
 
 
 def _get_dist_func(dist):
