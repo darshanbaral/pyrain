@@ -1,4 +1,3 @@
-from multiprocessing import Pool
 import numpy
 import pandas
 import toml
@@ -104,7 +103,6 @@ class RainLibrary(Rain):
                  dist: str = "gamma",
                  low: Union[pandas.Timedelta, str] = "6H",
                  high: Union[pandas.Timedelta, str] = "7D",
-                 n_cores: int = 1,
                  n_digits: int = 2) -> SyntheticRain:
         """
         generate synthetic rainfall time-series data
@@ -114,41 +112,46 @@ class RainLibrary(Rain):
             dist: name of distribution to use. must be one of `gamma`, `gev`, or `lognorm`
             low: "duration of smallest block used for randomly collating synthetic data"
             high: "duration of largest block used for randomly collating synthetic data"
-            n_cores: number of cores to use in parallel, if available
             n_digits: generated rainfall will be rounded to this many decimal places
 
         Returns:
             `Dataframe`: Synthetic rainfall time-series data for `size` number of water-years
         """
 
-        n_cores = int(max(1, n_cores))
         low = pandas.Timedelta(low)
         high = pandas.Timedelta(high)
 
         assert _to_timestamp(low) > _to_timestamp(self.time_step), "'low' must be greater than time step"
         assert _to_timestamp(high) > _to_timestamp(low), "'high' must be larger than 'low'"
 
+        n_rows_low = int(low / self.time_step)
+        n_rows_high = int(high / self.time_step)
+
         if (self.distribution_params is None) or (dist not in self.distribution_params):
             self._fit_distribution(dist)
 
         params = self.distribution_params[dist]
 
-        synthetic_totals = _stats.get_random_value(params, dist=dist, size=size).round(2)
+        synthetic_totals = numpy.sort(_stats.get_random_value(params, dist=dist, size=size).round(2))
+        dry_year_ind = synthetic_totals.searchsorted(self.dry_year_break, side="right")
+        wet_year_ind = synthetic_totals.searchsorted(self.wet_year_break, side="left")
+        synthetic_total_buckets = {"dry_years": synthetic_totals[:dry_year_ind],
+                                   "normal_years": synthetic_totals[dry_year_ind:wet_year_ind],
+                                   "wet_years": synthetic_totals[wet_year_ind:]}
 
-        if n_cores > 1:
-            pool = Pool(n_cores)
-            container = []
-
-            for synthetic_total in synthetic_totals:
-                synthetic_rain_series = pool.apply_async(self._sample_rain,
-                                                         (synthetic_total, n_digits, low, high))
-                container.append(synthetic_rain_series)
-            synthetic_rain = [res.get() for res in container]
-        else:
-            synthetic_rain = [self._sample_rain(val, n_digits, low, high) for val in synthetic_totals]
+        synthetic_rain = []
+        for bucket_name, totals in synthetic_total_buckets.items():
+            bucket = self.data[self.year_groups[bucket_name]].to_numpy()
+            _, n_cols = bucket.shape
+            inds = [self._get_row_col(self._get_random_inds(n_rows_low, n_rows_high), n_cols=n_cols) for _ in totals]
+            bucket_rain = numpy.column_stack([bucket[row_ind, col_ind] for row_ind, col_ind in inds])
+            bucket_rain = bucket_rain * totals / bucket_rain.sum(axis=0)
+            bucket_rain = pandas.DataFrame(bucket_rain.round(n_digits))
+            bucket_rain.index = self.data.index
+            synthetic_rain.append(bucket_rain)
 
         synthetic_rain = pandas.concat(synthetic_rain, axis=1)
-        synthetic_rain.index = self.data.index
+        synthetic_rain.columns = range(len(synthetic_rain.columns))
 
         return SyntheticRain(data=synthetic_rain,
                              time_step=self.time_step,
@@ -156,40 +159,6 @@ class RainLibrary(Rain):
                              dist_params=params,
                              low=low,
                              high=high)
-
-    def _sample_rain(self,
-                     synthetic_total: float,
-                     n_digits: int,
-                     low: pandas.Timedelta,
-                     high: pandas.Timedelta) -> pandas.Series:
-        """
-        generate synthetic rainfall data
-
-        :param synthetic_total: the total to assign to randomly concatenated rainfall time-series
-        :param n_digits: generated rainfall will be rounded to this many decimal places
-        :param low: "duration of smallest block used for randomly collating synthetic data"
-        :param high: "duration of largest block used for randomly collating synthetic data"
-        :return:
-        """
-        group = self._find_group(synthetic_total)
-        low = int(low / self.time_step)
-        high = int(high / self.time_step)
-        random_inds = self._get_random_inds(low, high)
-        n_cols = self._numpy_data[group].shape[1]
-        row_inds, col_inds = self._get_row_col(random_inds, n_cols)
-
-        collated_rain = pandas.Series(self._numpy_data[group][row_inds, col_inds])
-        collated_rain_total = collated_rain.sum()
-        synthetic_rain = collated_rain.mul(synthetic_total).div(collated_rain_total).round(n_digits)
-
-        return synthetic_rain
-
-    def _find_group(self, total):
-        if total <= self.dry_year_break:
-            return "dry_years"
-        elif total >= self.wet_year_break:
-            return "wet_years"
-        return "normal_years"
 
     def _get_random_inds(self,
                          low: int,
