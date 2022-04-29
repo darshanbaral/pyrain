@@ -1,6 +1,6 @@
 import pandas
 import numpy
-from scipy.stats import gamma, genextreme, lognorm, kappa3, pareto, weibull_min, pearson3
+from scipy.stats import gamma, genextreme, lognorm, kappa3, genpareto, weibull_min, pearson3, expon, beta
 from enum import Enum
 
 
@@ -17,21 +17,23 @@ class _LogPearson3:
 
 
 class Dists(Enum):
+    beta = beta
+    expon = expon
     gamma = gamma
+    genpareto = genpareto
     gev = genextreme
     lognorm = lognorm
-    kappa3 = kappa3
-    pareto = pareto
-    weibull = weibull_min
-    pearson3 = pearson3
     logpearson3 = _LogPearson3
+    kappa3 = kappa3
+    pearson3 = pearson3
+    weibull_min = weibull_min
 
 
 def _get_dist_func(dist):
     try:
         dist_func = Dists[dist].value
     except KeyError as err:
-        print("'dist' {dist_name} is not valid. 'dist' has to be in ['gamma', 'gev', 'lognorm']".format(dist_name=dist))
+        print(f"'dist' {dist} is not valid. 'dist' has to be in {[e.name for e in Dists]}")
         raise KeyError(err)
 
     return dist_func
