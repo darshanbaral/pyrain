@@ -26,3 +26,18 @@ def _get_water_year(idx: pandas.DatetimeIndex, year_start: int) -> pandas.Index:
     """
     water_year = idx.map(lambda x: x.year if (x.month < year_start) | (year_start == 1) else x.year + 1)
     return water_year
+
+
+def _calc_exceedance(data: pandas.Series):
+    """
+    Calculate empirical probability of being equalled or exceeded
+
+    :param data: pandas Series with data
+    :return: dataframe with columns `val`, `len`, and `prob`
+    """
+    exceedance = data.value_counts().reset_index()
+    exceedance.columns = ["val", "len"]
+    exceedance = exceedance.sort_values("val", ascending=False)
+    exceedance.len = exceedance.len.cumsum()
+    exceedance["prob"] = exceedance.len.div(len(data) + 1)
+    return exceedance
