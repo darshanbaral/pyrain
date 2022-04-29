@@ -3,7 +3,7 @@ import pandas
 import pdrle
 from scipy import interpolate
 from typing import Union, Callable
-from ._utils import _to_timestamp
+from ._utils import _to_timestamp, _calc_exceedance
 
 
 class Rain:
@@ -57,12 +57,8 @@ class Rain:
         for window in windows:
             window = pandas.Timedelta(window)
             nm = f'{window.total_seconds() / 3600}H'
-            max_: pandas.Series = self.data.rolling(window=window).sum().max().round(n_digits)
-            ex = max_.value_counts().reset_index()
-            ex.columns = ["val", "len"]
-            ex = ex.sort_values("val", ascending=False)
-            ex.len = ex.len.cumsum()
-            ex["prob"] = ex.len.div(len(max_) + 1)
+            max_ = self.data.rolling(window=window).sum().max().round(n_digits)
+            ex = _calc_exceedance(max_)
 
             if probs is not None:
                 interpolate_vals = interpolate.interp1d(ex.prob, ex.val, bounds_error=False)
