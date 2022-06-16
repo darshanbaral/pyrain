@@ -109,7 +109,8 @@ class RainLibrary(Rain):
 
         Args:
             size: the size (number of water-years) of randomly generated data
-            dist: name of distribution to use. must be one of `gamma`, `gev`, or `lognorm`
+            dist: name of distribution to use. must be one of `beta`, `expon`, `gamma`, `genpareto`,
+                `gev`, `lognorm`, `logpearson3`, `kappa3`, `pearson3`, and `weibull_min`
             low: "duration of smallest block used for randomly collating synthetic data"
             high: "duration of largest block used for randomly collating synthetic data"
             n_digits: generated rainfall will be rounded to this many decimal places

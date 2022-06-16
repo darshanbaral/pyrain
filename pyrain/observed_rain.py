@@ -67,9 +67,8 @@ class ObservedRain:
                        dry_year_break: float = 0.25,
                        wet_year_break: float = 0.75) -> RainLibrary:
         """
-        create a library o facilitate synthetic rainfall generation. converts rainfall data in long format to wide
-        format where each column is different water year. The water years where data is not available for all twelve
-        months are dropped. In wide format, all water years will have same datetime index. dates will go from year
+        create a library to facilitate synthetic rainfall generation. converts rainfall data in long format to wide
+        format where each column is different water year. In wide format, all water years will have same datetime index. dates will go from year
         2017 to 2018. Data for leap days will be dropped to keep shape uniform in wide format
 
         Args:
