@@ -1,6 +1,6 @@
 autopep8==1.6.0
 importlib-metadata==4.11.2
-Mako==1.2.0
+Mako==1.2.2
 Markdown==3.3.6
 MarkupSafe==2.1.0
 numpy==1.22.2
